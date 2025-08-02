@@ -56,9 +56,25 @@ function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#1976d2',
-        tabBarInactiveTintColor: '#666',
+        tabBarActiveTintColor: '#667eea',
+        tabBarInactiveTintColor: '#a0aec0',
         headerShown: false,
+        tabBarStyle: {
+          backgroundColor: 'white',
+          borderTopWidth: 0,
+          elevation: 20,
+          shadowColor: '#667eea',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.15,
+          shadowRadius: 10,
+          height: 65,
+          paddingBottom: 10,
+          paddingTop: 10,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
       }}
     >
       <Tab.Screen
@@ -107,8 +123,19 @@ export default function AppNavigator() {
           component={ProductDetailScreen}
           options={{
             title: 'Product Details',
-            headerStyle: { backgroundColor: '#1976d2' },
+            headerStyle: { 
+              backgroundColor: '#667eea',
+              elevation: 8,
+              shadowColor: '#667eea',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 8,
+            },
             headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+              fontSize: 18,
+            },
           }}
         />
         <Stack.Screen
@@ -116,8 +143,19 @@ export default function AppNavigator() {
           component={SearchScreen}
           options={{
             title: 'Search Products',
-            headerStyle: { backgroundColor: '#1976d2' },
+            headerStyle: { 
+              backgroundColor: '#764ba2',
+              elevation: 8,
+              shadowColor: '#764ba2',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 8,
+            },
             headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+              fontSize: 18,
+            },
           }}
         />
         <Stack.Screen
@@ -125,8 +163,19 @@ export default function AppNavigator() {
           component={CheckoutScreen}
           options={{
             title: 'Checkout',
-            headerStyle: { backgroundColor: '#1976d2' },
+            headerStyle: { 
+              backgroundColor: '#f093fb',
+              elevation: 8,
+              shadowColor: '#f093fb',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 8,
+            },
             headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+              fontSize: 18,
+            },
           }}
         />
       </Stack.Navigator>

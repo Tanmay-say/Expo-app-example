@@ -15,11 +15,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { Category, Product, RootStackParamList } from '../types';
 import { apiService } from '../services/api';
 import CategoryCard from '../components/CategoryCard';
 import ProductCard from '../components/ProductCard';
+import GradientBanner from '../components/GradientBanner';
+import PromoBanner from '../components/PromoBanner';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -92,47 +95,64 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.centerContainer, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator size="large" />
+      <LinearGradient
+        colors={['#667eea', '#764ba2', '#f093fb']}
+        style={styles.centerContainer}
+      >
+        <ActivityIndicator size="large" color="white" />
         <Text style={styles.loadingText}>Loading ElectroQuick...</Text>
-      </View>
+      </LinearGradient>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={styles.container}>
+      <LinearGradient
+        colors={['#667eea', '#764ba2']}
+        style={styles.backgroundGradient}
+      />
+      
       <ScrollView
         style={styles.scrollView}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
+        showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
-          <Text variant="headlineSmall" style={styles.headerTitle}>
-            ElectroQuick
-          </Text>
-          <Text variant="bodyMedium" style={styles.headerSubtitle}>
-            Your Electrical Equipment Store
-          </Text>
-        </View>
+        {/* Stylish Banner */}
+        <GradientBanner
+          title="ElectroQuick ⚡"
+          subtitle="Your Premium Electrical Equipment Store"
+          icon="flash-on"
+          colors={['#667eea', '#764ba2', '#f093fb']}
+        />
+
+        {/* Promo Banner */}
+        <PromoBanner
+          title="Special Offer! 🎉"
+          subtitle="Get 20% off on all electrical components"
+          discount="SAVE20"
+          onPress={() => {}}
+        />
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <Searchbar
-            placeholder="Search products, brands, part numbers..."
+            placeholder="🔍 Search products, brands, part numbers..."
             onChangeText={setSearchQuery}
             value={searchQuery}
             onSubmitEditing={handleSearch}
             onIconPress={handleSearch}
             style={styles.searchBar}
+            inputStyle={styles.searchInput}
+            iconColor="#667eea"
           />
         </View>
 
         {/* Categories Section */}
         <View style={styles.section}>
-          <Text variant="titleLarge" style={styles.sectionTitle}>
-            Shop by Category
+          <Text variant="headlineSmall" style={styles.sectionTitle}>
+            🏪 Shop by Category
           </Text>
           <FlatList
             data={categories}
@@ -141,13 +161,14 @@ export default function HomeScreen() {
             numColumns={2}
             scrollEnabled={false}
             showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesGrid}
           />
         </View>
 
         {/* Featured Products Section */}
         <View style={styles.section}>
-          <Text variant="titleLarge" style={styles.sectionTitle}>
-            Featured Products
+          <Text variant="headlineSmall" style={styles.sectionTitle}>
+            ⭐ Featured Products
           </Text>
           <FlatList
             data={featuredProducts}
@@ -156,8 +177,12 @@ export default function HomeScreen() {
             numColumns={2}
             scrollEnabled={false}
             showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.productsGrid}
           />
         </View>
+        
+        {/* Spacer for better scrolling */}
+        <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -166,6 +191,14 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    position: 'relative',
+  },
+  backgroundGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 300,
   },
   centerContainer: {
     flex: 1,
@@ -174,35 +207,54 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,
   },
-  header: {
-    padding: 20,
-    paddingTop: 10,
-  },
-  headerTitle: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  headerSubtitle: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 4,
-  },
   searchContainer: {
-    padding: 16,
-    paddingTop: 20,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   searchBar: {
-    elevation: 4,
+    elevation: 8,
+    borderRadius: 25,
+    backgroundColor: 'white',
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  searchInput: {
+    fontSize: 16,
   },
   section: {
-    padding: 16,
-    paddingTop: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    marginHorizontal: 16,
+    marginBottom: 20,
+    borderRadius: 20,
+    padding: 20,
+    elevation: 6,
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
   },
   sectionTitle: {
-    marginBottom: 16,
-    fontWeight: '600',
+    marginBottom: 20,
+    fontWeight: 'bold',
+    color: '#2d3748',
+    textAlign: 'center',
+  },
+  categoriesGrid: {
+    paddingBottom: 8,
+  },
+  productsGrid: {
+    paddingBottom: 8,
+  },
+  bottomSpacer: {
+    height: 20,
   },
 });

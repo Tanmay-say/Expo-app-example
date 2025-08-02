@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Card, Text, Button, useTheme } from 'react-native-paper';
+import { Card, Text, Button, useTheme, Chip } from 'react-native-paper';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Product } from '../types';
 import { cartService } from '../services/cartService';
@@ -41,14 +42,29 @@ export default function ProductCard({ product, onPress }: ProductCardProps) {
 
   return (
     <TouchableOpacity onPress={onPress} style={styles.container}>
-      <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+      <Card style={styles.card}>
         <View style={styles.imageContainer}>
           <Image
             source={{ uri: product.image_url }}
             style={styles.image}
             contentFit="cover"
-            transition={200}
+            transition={300}
           />
+          
+          {/* Stock Status Badge */}
+          <View style={styles.badgeContainer}>
+            <Chip
+              icon={product.stock > 0 ? "check-circle" : "cancel"}
+              style={[
+                styles.stockBadge,
+                { backgroundColor: product.stock > 0 ? '#00b894' : '#ff6b6b' }
+              ]}
+              textStyle={styles.badgeText}
+            >
+              {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+            </Chip>
+          </View>
+          
           {product.stock === 0 && (
             <View style={styles.outOfStockOverlay}>
               <Text style={styles.outOfStockText}>Out of Stock</Text>
@@ -61,40 +77,55 @@ export default function ProductCard({ product, onPress }: ProductCardProps) {
             {product.name}
           </Text>
           
-          <Text variant="bodySmall" style={styles.manufacturer}>
-            {product.manufacturer}
-          </Text>
-          
-          <View style={styles.priceRow}>
-            <Text variant="titleMedium" style={[styles.price, { color: theme.colors.primary }]}>
-              {formatPrice(product.price)}
+          <View style={styles.manufacturerRow}>
+            <MaterialIcons name="business" size={14} color="#74b9ff" />
+            <Text variant="bodySmall" style={styles.manufacturer}>
+              {product.manufacturer}
             </Text>
-            {product.stock > 0 && (
-              <Button
-                mode={isInCart ? "contained-tonal" : "contained"}
-                onPress={handleAddToCart}
-                style={styles.addButton}
-                contentStyle={styles.addButtonContent}
-                icon={isInCart ? "check" : "plus"}
-              >
-                {isInCart ? "Added" : "Add"}
-              </Button>
-            )}
           </View>
           
+          <LinearGradient
+            colors={['#667eea', '#764ba2']}
+            style={styles.priceContainer}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Text variant="titleMedium" style={styles.price}>
+              {formatPrice(product.price)}
+            </Text>
+          </LinearGradient>
+          
+          {product.stock > 0 && (
+            <Button
+              mode={isInCart ? "contained-tonal" : "contained"}
+              onPress={handleAddToCart}
+              style={[
+                styles.addButton,
+                { backgroundColor: isInCart ? '#00b894' : '#667eea' }
+              ]}
+              contentStyle={styles.addButtonContent}
+              icon={isInCart ? "check" : "plus"}
+              textColor="white"
+            >
+              {isInCart ? "Added" : "Add to Cart"}
+            </Button>
+          )}
+          
           {product.voltage && (
-            <View style={styles.specRow}>
-              <MaterialIcons name="flash-on" size={12} color="#666" />
-              <Text variant="bodySmall" style={styles.specText}>
-                {product.voltage}V
-              </Text>
+            <View style={styles.specsContainer}>
+              <View style={styles.specChip}>
+                <MaterialIcons name="flash-on" size={12} color="#ffeaa7" />
+                <Text variant="bodySmall" style={styles.specText}>
+                  {product.voltage}V
+                </Text>
+              </View>
               {product.current && (
-                <>
-                  <MaterialIcons name="bolt" size={12} color="#666" style={styles.specIcon} />
+                <View style={styles.specChip}>
+                  <MaterialIcons name="bolt" size={12} color="#ffeaa7" />
                   <Text variant="bodySmall" style={styles.specText}>
                     {product.current}A
                   </Text>
-                </>
+                </View>
               )}
             </View>
           )}
@@ -110,17 +141,37 @@ const styles = StyleSheet.create({
     margin: 8,
   },
   card: {
-    elevation: 2,
-    borderRadius: 12,
+    elevation: 8,
+    borderRadius: 20,
     overflow: 'hidden',
+    backgroundColor: 'white',
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
   },
   imageContainer: {
     position: 'relative',
-    height: 150,
+    height: 160,
+    backgroundColor: '#f8fafc',
   },
   image: {
     width: '100%',
     height: '100%',
+  },
+  badgeContainer: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    zIndex: 2,
+  },
+  stockBadge: {
+    elevation: 4,
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   outOfStockOverlay: {
     position: 'absolute',
@@ -131,46 +182,70 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1,
   },
   outOfStockText: {
     color: 'white',
     fontWeight: 'bold',
+    fontSize: 16,
   },
   content: {
-    padding: 12,
+    padding: 16,
   },
   title: {
-    marginBottom: 4,
-    fontWeight: '500',
+    marginBottom: 8,
+    fontWeight: 'bold',
+    color: '#2d3748',
+  },
+  manufacturerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   manufacturer: {
-    color: '#666',
-    marginBottom: 8,
+    color: '#74b9ff',
+    marginLeft: 4,
+    fontWeight: '600',
   },
-  priceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  priceContainer: {
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
     alignItems: 'center',
-    marginBottom: 8,
+    elevation: 2,
   },
   price: {
+    color: 'white',
     fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   addButton: {
-    borderRadius: 20,
+    borderRadius: 25,
+    marginBottom: 8,
+    elevation: 4,
   },
   addButtonContent: {
-    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
-  specRow: {
+  specsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  specChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#2d3748',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    elevation: 2,
   },
   specText: {
-    color: '#666',
-    marginLeft: 2,
-  },
-  specIcon: {
-    marginLeft: 8,
+    color: '#ffeaa7',
+    marginLeft: 4,
+    fontWeight: 'bold',
+    fontSize: 10,
   },
 });

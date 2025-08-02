@@ -19,7 +19,7 @@
       "current": 8,
       "description": "Safety relay for control applications with high reliability and quick response time",
       "price": 340.00,
-      "image_url": "https://via.placeholder.com/300x300/1976d2/ffffff?text=Siemens+Relay",
+      "image_url": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&h=300&fit=crop&crop=center",
       "stock": 120,
       "dimensions_mm": [45, 20, 60]
     },
@@ -33,7 +33,7 @@
       "current": null,
       "description": "Standard PVC insulated 2.5 mm² 3-core cable suitable for residential and commercial wiring",
       "price": 150.00,
-      "image_url": "https://via.placeholder.com/300x300/ff9800/ffffff?text=PVC+Cable",
+      "image_url": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&h=300&fit=crop&crop=center",
       "stock": 240,
       "dimensions_mm": null
     },
@@ -47,7 +47,7 @@
       "current": 32,
       "description": "Single pole MCB with C-curve characteristic for overload and short circuit protection",
       "price": 285.50,
-      "image_url": "https://via.placeholder.com/300x300/e53935/ffffff?text=ABB+MCB",
+      "image_url": "https://images.unsplash.com/photo-1621905252189-08b45d6a269e?w=300&h=300&fit=crop&crop=center",
       "stock": 89,
       "dimensions_mm": [18, 85, 78]
     },
@@ -61,7 +61,7 @@
       "current": null,
       "description": "Energy efficient LED downlight with natural white light, suitable for ceiling mounting",
       "price": 875.00,
-      "image_url": "https://via.placeholder.com/300x300/4caf50/ffffff?text=LED+Light",
+      "image_url": "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=300&h=300&fit=crop&crop=center",
       "stock": 156,
       "dimensions_mm": [90, 90, 50]
     },
@@ -75,7 +75,7 @@
       "current": 4.5,
       "description": "Single phase induction motor with 1440 RPM speed, ideal for pumps and fans",
       "price": 3250.00,
-      "image_url": "https://via.placeholder.com/300x300/9c27b0/ffffff?text=Motor+1HP",
+      "image_url": "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=300&h=300&fit=crop&crop=center",
       "stock": 25,
       "dimensions_mm": [180, 150, 120]
     },
@@ -89,7 +89,7 @@
       "current": 24,
       "description": "Screw connection terminal block for control panel wiring",
       "price": 45.00,
-      "image_url": "https://via.placeholder.com/300x300/607d8b/ffffff?text=Terminal+Block",
+      "image_url": "https://images.unsplash.com/photo-1621905251508-4d5b85d6b6a5?w=300&h=300&fit=crop&crop=center",
       "stock": 500,
       "dimensions_mm": [6, 41, 32]
     },
@@ -103,7 +103,7 @@
       "current": 6,
       "description": "4 contact relay with LED indication and test button",
       "price": 195.00,
-      "image_url": "https://via.placeholder.com/300x300/795548/ffffff?text=Schneider+Relay",
+      "image_url": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&h=300&fit=crop&crop=center",
       "stock": 75,
       "dimensions_mm": [27, 27, 24]
     },
@@ -117,7 +117,7 @@
       "current": null,
       "description": "Flame retardant single core cable with XLPE insulation",
       "price": 89.50,
-      "image_url": "https://via.placeholder.com/300x300/f44336/ffffff?text=FR+Cable",
+      "image_url": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&h=300&fit=crop&crop=center",
       "stock": 400,
       "dimensions_mm": null
     },
@@ -131,7 +131,7 @@
       "current": 16,
       "description": "Modular switch socket combination with child safety shutter",
       "price": 125.00,
-      "image_url": "https://via.placeholder.com/300x300/2196f3/ffffff?text=Switch+Socket",
+      "image_url": "https://images.unsplash.com/photo-1621905251708-8d5b85d6b6a5?w=300&h=300&fit=crop&crop=center",
       "stock": 200,
       "dimensions_mm": [70, 70, 40]
     },
@@ -145,7 +145,7 @@
       "current": 100,
       "description": "Molded case circuit breaker with thermal magnetic trip, 3-pole configuration",
       "price": 1850.00,
-      "image_url": "https://via.placeholder.com/300x300/673ab7/ffffff?text=L%26T+MCCB",
+      "image_url": "https://images.unsplash.com/photo-1621905252189-08b45d6a269e?w=300&h=300&fit=crop&crop=center",
       "stock": 35,
       "dimensions_mm": [70, 105, 86]
     },
@@ -159,7 +159,7 @@
       "current": null,
       "description": "T8 LED tube light with cool white color temperature, direct replacement for fluorescent tubes",
       "price": 350.00,
-      "image_url": "https://via.placeholder.com/300x300/ff5722/ffffff?text=LED+Tube",
+      "image_url": "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=300&h=300&fit=crop&crop=center",
       "stock": 180,
       "dimensions_mm": [1200, 26, 26]
     },
@@ -173,7 +173,7 @@
       "current": null,
       "description": "Step-down control transformer for automation and control circuits",
       "price": 750.00,
-      "image_url": "https://via.placeholder.com/300x300/8bc34a/ffffff?text=Transformer",
+      "image_url": "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=300&h=300&fit=crop&crop=center",
       "stock": 60,
       "dimensions_mm": [80, 90, 70]
     }
