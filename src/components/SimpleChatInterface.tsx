@@ -1,28 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
-  StyleSheet,
-  FlatList,
+  Text,
   TextInput,
-  Keyboard,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  Alert,
   KeyboardAvoidingView,
-  Platform
+  Platform,
 } from 'react-native';
-import { Card, useTheme, Text, Button, IconButton } from 'react-native-paper';
-import { LinearGradient } from 'expo-linear-gradient';
+import { IconButton, Card, Chip, Button } from 'react-native-paper';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-
+import { aiService, AIResponse } from '../services/aiService';
 import { Product } from '../types';
 import { config } from '../config/env';
-import { aiService } from '../services/aiService';
 
 interface ChatMessage {
   id: string;
   text: string;
   isUser: boolean;
-  imageUri?: string;
+  timestamp: Date;
+  image?: string;
   suggestedProducts?: Product[];
   totalCost?: number;
   budget?: {
@@ -32,313 +33,350 @@ interface ChatMessage {
   };
 }
 
-interface SimpleChatInterfaceProps {
-  visible: boolean;
-  onClose: () => void;
-  onProductSelect: (product: Product) => void;
-  onAddToCart: (product: Product) => void;
-}
-
-export default function SimpleChatInterface({
-  visible,
-  onClose,
-  onProductSelect,
-  onAddToCart,
-}: SimpleChatInterfaceProps) {
-  const theme = useTheme();
+const SimpleChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
-    if (visible && messages.length === 0) {
-      addBotMessage("Hello! I'm ElectroQuick's AI Assistant with access to our complete product catalog. I can help you with:\n\n🔧 **Equipment Recommendations**\n💰 **Cost Calculations & Budgeting**\n📋 **Professional Quotations**\n📸 **Image Analysis** (shopping lists, product photos)\n🛠️ **Technical Support**\n\nWhat electrical equipment do you need today?");
-    }
-  }, [visible]);
+    // Add welcome message
+    addBotMessage(
+      "🔧 **ElectroQuick AI Assistant**\n\nI can help you with:\n• Equipment recommendations\n• Product search\n• Technical specifications\n• Cost calculations\n• Project quotations\n\nWhat electrical equipment do you need today?",
+      [],
+      undefined,
+      undefined
+    );
+  }, []);
 
-  const addMessage = (message: ChatMessage) => {
-    setMessages((prevMessages) => [...prevMessages, message]);
-  };
-
-  const addBotMessage = (text: string, imageUri?: string, suggestedProducts?: Product[], totalCost?: number, budget?: any) => {
-    addMessage({
+  const addUserMessage = (text: string, image?: string) => {
+    const newMessage: ChatMessage = {
       id: Date.now().toString(),
       text,
+      isUser: true,
+      timestamp: new Date(),
+      image,
+    };
+    setMessages(prev => [...prev, newMessage]);
+  };
+
+  const addBotMessage = (
+    text: string, 
+    suggestedProducts?: Product[], 
+    totalCost?: number,
+    budget?: {
+      total: number;
+      breakdown: { [key: string]: number };
+      recommendations: string[];
+    }
+  ) => {
+    const newMessage: ChatMessage = {
+      id: (Date.now() + 1).toString(),
+      text,
       isUser: false,
-      imageUri,
+      timestamp: new Date(),
       suggestedProducts,
       totalCost,
       budget,
-    });
+    };
+    setMessages(prev => [...prev, newMessage]);
+  };
+
+  const clearChat = () => {
+    Alert.alert(
+      'Clear Chat',
+      'Are you sure you want to clear all messages?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: () => {
+            setMessages([]);
+            // Add welcome message back
+            addBotMessage(
+              "🔧 **ElectroQuick AI Assistant**\n\nI can help you with:\n• Equipment recommendations\n• Product search\n• Technical specifications\n• Cost calculations\n• Project quotations\n\nWhat electrical equipment do you need today?",
+              [],
+              undefined,
+              undefined
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const refreshChat = () => {
+    setMessages([]);
+    // Add welcome message back
+    addBotMessage(
+      "🔧 **ElectroQuick AI Assistant**\n\nI can help you with:\n• Equipment recommendations\n• Product search\n• Technical specifications\n• Cost calculations\n• Project quotations\n\nWhat electrical equipment do you need today?",
+      [],
+      undefined,
+      undefined
+    );
+  };
+
+  const generateAIResponse = async (query: string, imageUri?: string) => {
+    setIsLoading(true);
+    try {
+      let response: AIResponse;
+      
+      if (imageUri) {
+        response = await aiService.processImageQuery(imageUri, query);
+      } else {
+        response = await aiService.processTextQuery(query);
+      }
+
+      addBotMessage(
+        response.message,
+        response.suggestedProducts,
+        response.totalCost,
+        response.budget
+      );
+    } catch (error) {
+      console.error('AI Response Error:', error);
+      addBotMessage(
+        "I'm having trouble processing your request. Please try again or rephrase your question.",
+        [],
+        undefined,
+        undefined
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSend = async () => {
-    if (inputText.trim() === '') return;
+    if (!inputText.trim() && !selectedImage) return;
 
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      text: inputText.trim(),
-      isUser: true,
-    };
-    addMessage(userMessage);
+    const text = inputText.trim();
+    const image = selectedImage;
+
+    addUserMessage(text, image);
     setInputText('');
-    Keyboard.dismiss();
-    setIsTyping(true);
+    setSelectedImage(undefined);
 
-    try {
-      // Use the enhanced AI service with full product access
-      const aiResponse = await aiService.processTextQuery(userMessage.text);
-      
-      addBotMessage(
-        aiResponse.message,
-        undefined,
-        aiResponse.suggestedProducts,
-        aiResponse.totalCost,
-        aiResponse.budget
-      );
-    } catch (error) {
-      console.error('AI Service Error:', error);
-      addBotMessage("I'm having trouble processing your request. Please try again or contact our support team.");
-    } finally {
-      setIsTyping(false);
+    await generateAIResponse(text, image);
+  };
+
+  const [selectedImage, setSelectedImage] = useState<string | undefined>();
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setSelectedImage(result.assets[0].uri);
     }
   };
 
-  const pickImage = async (source: 'camera' | 'gallery') => {
-    let result;
-    if (source === 'camera') {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-      if (permissionResult.granted === false) {
-        alert('Permission to access camera is required!');
-        return;
-      }
-      result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
-      });
-    } else {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permissionResult.granted === false) {
-        alert('Permission to access media library is required!');
-        return;
-      }
-      result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
-      });
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Camera permission is required to take photos.');
+      return;
     }
 
-    if (!result.canceled) {
-      const userMessage: ChatMessage = {
-        id: Date.now().toString(),
-        text: 'Image uploaded for analysis.',
-        isUser: true,
-        imageUri: result.assets[0].uri,
-      };
-      addMessage(userMessage);
-      setIsTyping(true);
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
 
-      try {
-        // Use AI service to analyze the image
-        const aiResponse = await aiService.processImageQuery(result.assets[0].uri);
-        
-        addBotMessage(
-          aiResponse.message,
-          undefined,
-          aiResponse.suggestedProducts,
-          aiResponse.totalCost,
-          aiResponse.budget
-        );
-      } catch (error) {
-        console.error('Image Analysis Error:', error);
-        addBotMessage("I'm having trouble analyzing the image. Please describe what you see, and I'll help match it with our product catalog!");
-      } finally {
-        setIsTyping(false);
-      }
+    if (!result.canceled) {
+      setSelectedImage(result.assets[0].uri);
     }
   };
 
   const renderProductSuggestion = (product: Product) => (
-    <Card key={product.id} style={styles.productCard} onPress={() => onProductSelect(product)}>
+    <Card key={product.id} style={styles.productCard}>
+      <Card.Cover source={{ uri: product.image_url }} style={styles.productImage} />
       <Card.Content style={styles.productContent}>
-        <View style={styles.productRow}>
-          <Image
-            source={{ uri: product.image_url }}
-            style={styles.productImage}
-            contentFit="cover"
-          />
-          <View style={styles.productInfo}>
-            <Text variant="titleSmall" style={styles.productName} numberOfLines={2}>
-              {product.name}
-            </Text>
-            <Text variant="bodySmall" style={styles.productManufacturer}>
-              {product.manufacturer}
-            </Text>
-            <Text variant="titleMedium" style={styles.productPrice}>
-              ₹{product.price.toLocaleString('en-IN')}
-            </Text>
-          </View>
-          <Button
-            mode="contained"
-            onPress={() => onAddToCart(product)}
-            style={styles.addButton}
-            contentStyle={styles.addButtonContent}
-          >
-            Add
-          </Button>
+        <Text style={styles.productName} numberOfLines={2}>
+          {product.name}
+        </Text>
+        <Text style={styles.productManufacturer}>{product.manufacturer}</Text>
+        <Text style={styles.productPrice}>
+          ₹{product.price.toLocaleString('en-IN')}
+        </Text>
+        <View style={styles.productSpecs}>
+          {product.voltage && (
+            <Chip mode="outlined" style={styles.specChip}>
+              {product.voltage}V
+            </Chip>
+          )}
+          {product.current && (
+            <Chip mode="outlined" style={styles.specChip}>
+              {product.current}A
+            </Chip>
+          )}
         </View>
+        <Button
+          mode="contained"
+          onPress={() => {
+            // TODO: Add to cart functionality
+            Alert.alert('Added to Cart', `${product.name} has been added to your cart!`);
+          }}
+          style={styles.addButton}
+        >
+          Add to Cart
+        </Button>
       </Card.Content>
     </Card>
   );
 
-  const renderBudgetInfo = (budget: any) => (
+  const renderBudgetInfo = (budget: {
+    total: number;
+    breakdown: { [key: string]: number };
+    recommendations: string[];
+  }) => (
     <Card style={styles.budgetCard}>
       <Card.Content>
-        <Text variant="titleMedium" style={styles.budgetTitle}>
-          💰 Budget Analysis
+        <Text style={styles.budgetTitle}>💰 Budget Breakdown</Text>
+        <Text style={styles.budgetTotal}>
+          Total: ₹{budget.total.toLocaleString('en-IN')}
         </Text>
-        <Text variant="titleLarge" style={styles.budgetTotal}>
-          ₹{budget.total.toLocaleString('en-IN')}
-        </Text>
-        <View style={styles.budgetBreakdown}>
-          {Object.entries(budget.breakdown).map(([category, amount]) => (
-            <View key={category} style={styles.budgetItem}>
-              <Text variant="bodySmall">{category}</Text>
-              <Text variant="bodyMedium" style={styles.budgetAmount}>
-                ₹{(amount as number).toLocaleString('en-IN')}
-              </Text>
-            </View>
-          ))}
-        </View>
-        <View style={styles.recommendations}>
-          <Text variant="bodySmall" style={styles.recommendationsTitle}>
-            💡 Recommendations:
+        
+        {Object.entries(budget.breakdown).map(([category, amount]) => (
+          <View key={category} style={styles.budgetItem}>
+            <Text style={styles.budgetCategory}>{category}</Text>
+            <Text style={styles.budgetAmount}>₹{amount.toLocaleString('en-IN')}</Text>
+          </View>
+        ))}
+        
+        <Text style={styles.recommendationsTitle}>💡 Recommendations:</Text>
+        {budget.recommendations.map((rec, index) => (
+          <Text key={index} style={styles.recommendation}>
+            • {rec}
           </Text>
-          {budget.recommendations.map((rec: string, index: number) => (
-            <Text key={index} variant="bodySmall" style={styles.recommendation}>
-              • {rec}
-            </Text>
-          ))}
-        </View>
+        ))}
       </Card.Content>
     </Card>
   );
 
   const renderMessage = ({ item }: { item: ChatMessage }) => (
-    <View style={[
-      styles.messageBubble,
-      item.isUser ? styles.userBubble : styles.botBubble,
-      { alignSelf: item.isUser ? 'flex-end' : 'flex-start' }
-    ]}>
-      <Text style={item.isUser ? styles.userText : styles.botText}>
-        {item.text}
-      </Text>
-      {item.imageUri && (
-        <Image
-          source={{ uri: item.imageUri }}
-          style={styles.messageImage}
-          contentFit="cover"
-        />
+    <View style={[styles.messageContainer, item.isUser ? styles.userMessage : styles.botMessage]}>
+      {item.image && (
+        <Image source={{ uri: item.image }} style={styles.messageImage} />
       )}
       
-      {/* Render suggested products */}
-      {item.suggestedProducts && item.suggestedProducts.length > 0 && (
-        <View style={styles.suggestionsContainer}>
-          <Text variant="bodySmall" style={styles.suggestionsTitle}>
-            🛒 Suggested Products:
-          </Text>
-          {item.suggestedProducts.slice(0, 3).map(renderProductSuggestion)}
-        </View>
-      )}
-      
-      {/* Render budget information */}
-      {item.budget && renderBudgetInfo(item.budget)}
-      
-      {/* Show total cost if available */}
-      {item.totalCost && (
-        <View style={styles.totalCostContainer}>
-          <Text variant="titleMedium" style={styles.totalCostText}>
-            💰 Total Cost: ₹{item.totalCost.toLocaleString('en-IN')}
-          </Text>
-        </View>
-      )}
+      <View style={[styles.messageBubble, item.isUser ? styles.userBubble : styles.botBubble]}>
+        <Text style={[styles.messageText, item.isUser ? styles.userText : styles.botText]}>
+          {item.text}
+        </Text>
+        
+        {!item.isUser && item.suggestedProducts && item.suggestedProducts.length > 0 && (
+          <View style={styles.suggestionsContainer}>
+            <Text style={styles.suggestionsTitle}>🛍️ Suggested Products:</Text>
+            {item.suggestedProducts.map(renderProductSuggestion)}
+          </View>
+        )}
+        
+        {!item.isUser && item.budget && (
+          renderBudgetInfo(item.budget)
+        )}
+        
+        {!item.isUser && item.totalCost && !item.budget && (
+          <View style={styles.totalCostContainer}>
+            <Text style={styles.totalCostText}>
+              💰 Total Cost: ₹{item.totalCost.toLocaleString('en-IN')}
+            </Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
+    <KeyboardAvoidingView 
+      style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
     >
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.header}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-      >
-        <IconButton
-          icon="close"
-          iconColor="white"
-          size={24}
-          onPress={onClose}
-          style={styles.closeButton}
-        />
-        <Text variant="titleLarge" style={styles.headerTitle}>AI Equipment Assistant</Text>
-        <MaterialIcons name="psychology" size={28} color="white" style={styles.headerIcon} />
-      </LinearGradient>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>AI Equipment Assistant</Text>
+        <View style={styles.headerButtons}>
+          <IconButton
+            icon="refresh"
+            iconColor="#007AFF"
+            size={24}
+            onPress={refreshChat}
+          />
+          <IconButton
+            icon="close"
+            iconColor="#FF3B30"
+            size={24}
+            onPress={clearChat}
+          />
+        </View>
+      </View>
 
+      {/* Chat Messages */}
       <FlatList
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.chatContainer}
-        inverted // Show latest messages at the bottom
+        showsVerticalScrollIndicator={false}
+        ref={flatListRef}
+        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
-      {isTyping && (
-        <View style={styles.typingIndicatorContainer}>
-          <Text style={styles.typingIndicatorText}>AI is analyzing your request...</Text>
-        </View>
-      )}
-
+      {/* Input Area */}
       <View style={styles.inputContainer}>
-        <IconButton
-          icon="camera"
-          size={24}
-          onPress={() => pickImage('camera')}
-          iconColor={theme.colors.primary}
-        />
-        <IconButton
-          icon="image"
-          size={24}
-          onPress={() => pickImage('gallery')}
-          iconColor={theme.colors.primary}
-        />
-        <TextInput
-          style={styles.textInput}
-          placeholder="Ask about equipment, costs, or upload a shopping list..."
-          value={inputText}
-          onChangeText={setInputText}
-          onSubmitEditing={handleSend}
-          multiline
-          placeholderTextColor={theme.colors.onSurfaceVariant}
-        />
-        <IconButton
-          icon="send"
-          size={24}
-          onPress={handleSend}
-          iconColor={theme.colors.primary}
-          disabled={inputText.trim() === ''}
-        />
+        {selectedImage && (
+          <View style={styles.selectedImageContainer}>
+            <Image source={{ uri: selectedImage }} style={styles.selectedImage} />
+            <TouchableOpacity
+              style={styles.removeImageButton}
+              onPress={() => setSelectedImage(undefined)}
+            >
+              <MaterialIcons name="close" size={20} color="#FF3B30" />
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        <View style={styles.inputRow}>
+          <View style={styles.inputActions}>
+            <TouchableOpacity style={styles.actionButton} onPress={takePhoto}>
+              <MaterialIcons name="camera-alt" size={24} color="#007AFF" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={pickImage}>
+              <MaterialIcons name="photo-library" size={24} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+          
+          <TextInput
+            style={styles.textInput}
+            value={inputText}
+            onChangeText={setInputText}
+            placeholder="Ask about electrical equipment..."
+            placeholderTextColor="#999"
+            multiline
+            maxLength={500}
+          />
+          
+          <TouchableOpacity
+            style={[styles.sendButton, (!inputText.trim() && !selectedImage) && styles.sendButtonDisabled]}
+            onPress={handleSend}
+            disabled={!inputText.trim() && !selectedImage || isLoading}
+          >
+            <MaterialIcons
+              name={isLoading ? 'hourglass-empty' : 'send'}
+              size={24}
+              color={(!inputText.trim() && !selectedImage) || isLoading ? '#999' : '#007AFF'}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -347,27 +385,25 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     paddingTop: Platform.OS === 'android' ? 40 : 12,
+    backgroundColor: '#667eea',
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
-  closeButton: {
-    marginRight: 10,
-  },
   headerTitle: {
-    flex: 1,
     color: 'white',
+    fontSize: 20,
     fontWeight: 'bold',
-    textAlign: 'center',
   },
-  headerIcon: {
-    marginLeft: 10,
+  headerButtons: {
+    flexDirection: 'row',
   },
   chatContainer: {
     paddingHorizontal: 10,
@@ -375,11 +411,22 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'flex-end',
   },
+  messageContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  userMessage: {
+    flexDirection: 'row-reverse',
+  },
+  botMessage: {
+    flexDirection: 'row',
+  },
   messageBubble: {
     maxWidth: '85%',
     padding: 12,
     borderRadius: 15,
-    marginBottom: 10,
+    marginHorizontal: 5,
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -394,26 +441,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderBottomLeftRadius: 2,
   },
+  messageText: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
   userText: {
     color: '#00796b',
   },
   botText: {
     color: '#2d3748',
-    lineHeight: 20,
   },
   messageImage: {
     width: 150,
     height: 150,
     borderRadius: 10,
-    marginTop: 8,
+    marginBottom: 8,
   },
   suggestionsContainer: {
-    marginTop: 12,
+    marginTop: 8,
+    paddingHorizontal: 5,
   },
   suggestionsTitle: {
+    fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 8,
     color: '#667eea',
+    marginBottom: 5,
   },
   productCard: {
     marginVertical: 4,
@@ -422,48 +474,52 @@ const styles = StyleSheet.create({
   productContent: {
     padding: 8,
   },
-  productRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   productImage: {
     width: 50,
     height: 50,
     borderRadius: 8,
-    marginRight: 12,
-  },
-  productInfo: {
-    flex: 1,
   },
   productName: {
+    fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 2,
   },
   productManufacturer: {
+    fontSize: 12,
     color: '#666',
     marginBottom: 2,
   },
   productPrice: {
-    color: '#667eea',
+    fontSize: 14,
     fontWeight: 'bold',
+    color: '#667eea',
+  },
+  productSpecs: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 5,
+  },
+  specChip: {
+    marginRight: 5,
+    marginBottom: 5,
+    backgroundColor: '#e0e0e0',
   },
   addButton: {
-    marginLeft: 8,
-  },
-  addButtonContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    marginTop: 10,
+    backgroundColor: '#667eea',
   },
   budgetCard: {
     marginTop: 12,
     backgroundColor: '#f8f9fa',
   },
   budgetTitle: {
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 8,
     color: '#667eea',
+    marginBottom: 8,
   },
   budgetTotal: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#667eea',
     marginBottom: 12,
@@ -476,7 +532,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 4,
   },
+  budgetCategory: {
+    fontSize: 14,
+    color: '#333',
+  },
   budgetAmount: {
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#667eea',
   },
@@ -486,13 +547,15 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   recommendationsTitle: {
+    fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 4,
     color: '#667eea',
+    marginBottom: 4,
   },
   recommendation: {
-    marginBottom: 2,
+    fontSize: 13,
     color: '#666',
+    marginBottom: 2,
   },
   totalCostContainer: {
     marginTop: 8,
@@ -501,6 +564,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   totalCostText: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#2e7d32',
     textAlign: 'center',
@@ -518,13 +582,27 @@ const styles = StyleSheet.create({
     color: '#555',
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
     backgroundColor: 'white',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  inputActions: {
+    flexDirection: 'row',
+    marginRight: 10,
+  },
+  actionButton: {
+    padding: 8,
+    marginRight: 5,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
   },
   textInput: {
     flex: 1,
@@ -534,5 +612,34 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginHorizontal: 5,
     maxHeight: 100,
+    fontSize: 16,
+    color: '#333',
+  },
+  sendButton: {
+    padding: 10,
+  },
+  sendButtonDisabled: {
+    opacity: 0.5,
+  },
+  selectedImageContainer: {
+    position: 'relative',
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginRight: 10,
+  },
+  selectedImage: {
+    width: '100%',
+    height: '100%',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: 10,
   },
 });
+
+export default SimpleChatInterface;

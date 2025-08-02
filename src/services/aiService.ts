@@ -91,6 +91,8 @@ class AIService {
       const prompt = `
 You are ElectroQuick AI Assistant, an expert electrical equipment consultant with access to our complete product catalog.
 
+IMPORTANT: Only suggest products that exist in our catalog. Do not make up or hallucinate products.
+
 COMPLETE PRODUCT DATABASE (${this.products.length} products):
 ${this.productDatabase}
 
@@ -102,27 +104,30 @@ CONTEXT: ${context}
 USER QUERY: "${query}"
 
 INSTRUCTIONS:
-1. Analyze the user's equipment requirements thoroughly
-2. Suggest specific products from our catalog that match their needs
-3. Consider technical specifications (voltage, current, etc.)
-4. Provide cost estimates and budget analysis
-5. Offer alternative solutions if needed
-6. Include product IDs for exact matching
+1. ONLY suggest products that exist in the provided product database
+2. Use exact product names, part numbers, and prices from the database
+3. Check stock availability before recommending products
+4. Provide accurate technical specifications from the database
+5. Calculate costs using actual product prices
+6. If no matching products exist, clearly state this
 7. Be professional, helpful, and accurate
 8. Use Indian Rupee (₹) for all pricing
-9. Consider stock availability in recommendations
+9. Include stock levels in recommendations
+10. Do not invent or hallucinate any product information
+11. ONLY provide budget analysis if the user specifically asks about costs, budget, or pricing
+12. Keep responses focused on what the user actually asked for
+13. Be conversational and helpful, not overwhelming with unnecessary information
 
 Respond in JSON format:
 {
-  "message": "Your detailed, helpful response with specific product recommendations",
+  "message": "Your detailed, helpful response with specific product recommendations from our actual catalog",
   "suggestedProducts": ["product_id1", "product_id2"],
-  "totalCost": estimated_total_cost,
+  "totalCost": estimated_total_cost (only if relevant),
   "budget": {
     "total": number,
     "breakdown": {"category": amount},
     "recommendations": ["suggestion1", "suggestion2"]
-  },
-  "extractedItems": ["item1", "item2"] if user mentioned specific items
+  } (ONLY if user specifically asks about budget/costs)
 }
       `;
 
@@ -161,21 +166,19 @@ Respond in JSON format:
       const motorProducts = this.products.filter(p => 
         p.category_id === 'transformers_motors' && p.stock > 0
       );
+      
+      if (motorProducts.length === 0) {
+        return {
+          message: "I don't have any motors or transformers in stock at the moment. Please check back later or ask about other electrical equipment.",
+        };
+      }
+      
       return {
-        message: `⚙️ **Motor & Transformer Solutions**\n\nI found ${motorProducts.length} available products:\n\n${motorProducts.slice(0, 5).map(p => 
-          `• **${p.name}** (${p.manufacturer})\n  - Part: ${p.part_number}\n  - Price: ₹${p.price.toLocaleString('en-IN')}\n  - ${p.voltage ? `${p.voltage}V` : ''} ${p.current ? `${p.current}A` : ''}\n`
-        ).join('\n')}\n\n💰 **Total Budget Range**: ₹${Math.min(...motorProducts.map(p => p.price)).toLocaleString('en-IN')} - ₹${Math.max(...motorProducts.map(p => p.price)).toLocaleString('en-IN')}\n\nNeed specific power requirements? Tell me voltage, current, or application!`,
+        message: `⚙️ **Motor & Transformer Solutions**\n\nI found ${motorProducts.length} available products in our catalog:\n\n${motorProducts.slice(0, 5).map(p => 
+          `• **${p.name}** (${p.manufacturer})\n  - Part Number: ${p.part_number}\n  - Price: ₹${p.price.toLocaleString('en-IN')}\n  - ${p.voltage ? `${p.voltage}V` : ''} ${p.current ? `${p.current}A` : ''}\n  - Stock: ${p.stock} units\n`
+        ).join('\n')}\n\n💰 **Price Range**: ₹${Math.min(...motorProducts.map(p => p.price)).toLocaleString('en-IN')} - ₹${Math.max(...motorProducts.map(p => p.price)).toLocaleString('en-IN')}\n\nNeed specific power requirements? Tell me voltage, current, or application!`,
         suggestedProducts: motorProducts.slice(0, 5),
         totalCost: motorProducts.reduce((sum, p) => sum + p.price, 0),
-        budget: {
-          total: motorProducts.reduce((sum, p) => sum + p.price, 0),
-          breakdown: { 'Motors & Transformers': motorProducts.reduce((sum, p) => sum + p.price, 0) },
-          recommendations: [
-            'Consider single-phase vs three-phase requirements',
-            'Check voltage compatibility with your system',
-            'Factor in installation and maintenance costs'
-          ]
-        }
       };
     }
 
@@ -183,21 +186,19 @@ Respond in JSON format:
       const cableProducts = this.products.filter(p => 
         p.category_id === 'cables_wires' && p.stock > 0
       );
+      
+      if (cableProducts.length === 0) {
+        return {
+          message: "I don't have any cables or wires in stock at the moment. Please check back later or ask about other electrical equipment.",
+        };
+      }
+      
       return {
-        message: `🔌 **Cable & Wire Solutions**\n\nAvailable options (${cableProducts.length} products):\n\n${cableProducts.slice(0, 5).map(p => 
-          `• **${p.name}** (${p.manufacturer})\n  - Part: ${p.part_number}\n  - Price: ₹${p.price.toLocaleString('en-IN')}\n  - ${p.voltage ? `${p.voltage}V` : ''} ${p.current ? `${p.current}A` : ''}\n`
+        message: `🔌 **Cable & Wire Solutions**\n\nAvailable options (${cableProducts.length} products in stock):\n\n${cableProducts.slice(0, 5).map(p => 
+          `• **${p.name}** (${p.manufacturer})\n  - Part Number: ${p.part_number}\n  - Price: ₹${p.price.toLocaleString('en-IN')}\n  - ${p.voltage ? `${p.voltage}V` : ''} ${p.current ? `${p.current}A` : ''}\n  - Stock: ${p.stock} units\n`
         ).join('\n')}\n\n💡 **Recommendations**:\n• PVC cables for indoor use\n• Armoured cables for outdoor/industrial\n• Check current rating for your load\n• Consider cable length requirements`,
         suggestedProducts: cableProducts.slice(0, 5),
         totalCost: cableProducts.reduce((sum, p) => sum + p.price, 0),
-        budget: {
-          total: cableProducts.reduce((sum, p) => sum + p.price, 0),
-          breakdown: { 'Cables & Wires': cableProducts.reduce((sum, p) => sum + p.price, 0) },
-          recommendations: [
-            'Calculate total cable length needed',
-            'Consider voltage drop for long runs',
-            'Choose appropriate insulation type'
-          ]
-        }
       };
     }
 
@@ -205,21 +206,19 @@ Respond in JSON format:
       const lightingProducts = this.products.filter(p => 
         p.category_id === 'lighting' && p.stock > 0
       );
+      
+      if (lightingProducts.length === 0) {
+        return {
+          message: "I don't have any lighting products in stock at the moment. Please check back later or ask about other electrical equipment.",
+        };
+      }
+      
       return {
-        message: `💡 **Lighting Solutions**\n\nBrighten your space with ${lightingProducts.length} options:\n\n${lightingProducts.slice(0, 5).map(p => 
-          `• **${p.name}** (${p.manufacturer})\n  - Part: ${p.part_number}\n  - Price: ₹${p.price.toLocaleString('en-IN')}\n  - ${p.voltage ? `${p.voltage}V` : ''} ${p.current ? `${p.current}A` : ''}\n`
+        message: `💡 **Lighting Solutions**\n\nBrighten your space with ${lightingProducts.length} available options:\n\n${lightingProducts.slice(0, 5).map(p => 
+          `• **${p.name}** (${p.manufacturer})\n  - Part Number: ${p.part_number}\n  - Price: ₹${p.price.toLocaleString('en-IN')}\n  - ${p.voltage ? `${p.voltage}V` : ''} ${p.current ? `${p.current}A` : ''}\n  - Stock: ${p.stock} units\n`
         ).join('\n')}\n\n🌟 **Lighting Tips**:\n• LED bulbs save 80% energy\n• Consider lumens for brightness\n• Check voltage compatibility\n• Factor in installation costs`,
         suggestedProducts: lightingProducts.slice(0, 5),
         totalCost: lightingProducts.reduce((sum, p) => sum + p.price, 0),
-        budget: {
-          total: lightingProducts.reduce((sum, p) => sum + p.price, 0),
-          breakdown: { 'Lighting': lightingProducts.reduce((sum, p) => sum + p.price, 0) },
-          recommendations: [
-            'Calculate total lumens needed for your space',
-            'Consider energy efficiency ratings',
-            'Plan for future maintenance'
-          ]
-        }
       };
     }
 
@@ -227,32 +226,32 @@ Respond in JSON format:
       const protectionProducts = this.products.filter(p => 
         (p.category_id === 'switch_protection' || p.category_id === 'circuit_breakers') && p.stock > 0
       );
+      
+      if (protectionProducts.length === 0) {
+        return {
+          message: "I don't have any switches or protection equipment in stock at the moment. Please check back later or ask about other electrical equipment.",
+        };
+      }
+      
       return {
-        message: `⚡ **Switch & Protection Equipment**\n\nSafety first with ${protectionProducts.length} products:\n\n${protectionProducts.slice(0, 5).map(p => 
-          `• **${p.name}** (${p.manufacturer})\n  - Part: ${p.part_number}\n  - Price: ₹${p.price.toLocaleString('en-IN')}\n  - ${p.voltage ? `${p.voltage}V` : ''} ${p.current ? `${p.current}A` : ''}\n`
+        message: `⚡ **Switch & Protection Equipment**\n\nSafety first with ${protectionProducts.length} available products:\n\n${protectionProducts.slice(0, 5).map(p => 
+          `• **${p.name}** (${p.manufacturer})\n  - Part Number: ${p.part_number}\n  - Price: ₹${p.price.toLocaleString('en-IN')}\n  - ${p.voltage ? `${p.voltage}V` : ''} ${p.current ? `${p.current}A` : ''}\n  - Stock: ${p.stock} units\n`
         ).join('\n')}\n\n🛡️ **Safety Guidelines**:\n• Match breaker rating to circuit load\n• Consider surge protection for sensitive equipment\n• Plan for future expansion\n• Always consult qualified electrician`,
         suggestedProducts: protectionProducts.slice(0, 5),
         totalCost: protectionProducts.reduce((sum, p) => sum + p.price, 0),
-        budget: {
-          total: protectionProducts.reduce((sum, p) => sum + p.price, 0),
-          breakdown: { 'Protection Equipment': protectionProducts.reduce((sum, p) => sum + p.price, 0) },
-          recommendations: [
-            'Calculate total circuit load',
-            'Consider safety regulations',
-            'Plan for emergency backup systems'
-          ]
-        }
       };
     }
 
-    // Budget and cost queries
-    if (lowerQuery.includes('budget') || lowerQuery.includes('cost') || lowerQuery.includes('price')) {
+    // Budget and cost queries - ONLY when specifically asked
+    if (lowerQuery.includes('budget') || lowerQuery.includes('cost') || lowerQuery.includes('price') || lowerQuery.includes('total cost') || lowerQuery.includes('how much')) {
       const totalInventory = this.products.reduce((sum, p) => sum + p.price, 0);
       const avgPrice = totalInventory / this.products.length;
+      const inStockProducts = this.products.filter(p => p.stock > 0);
       
       return {
-        message: `💰 **Budget Analysis**\n\n**Complete Inventory Value**: ₹${totalInventory.toLocaleString('en-IN')}\n**Average Product Price**: ₹${avgPrice.toLocaleString('en-IN')}\n\n**Price Ranges by Category**:\n${this.categories.map(cat => {
+        message: `💰 **Budget Analysis**\n\n**Complete Inventory Value**: ₹${totalInventory.toLocaleString('en-IN')}\n**Average Product Price**: ₹${avgPrice.toLocaleString('en-IN')}\n**Products in Stock**: ${inStockProducts.length} out of ${this.products.length}\n\n**Price Ranges by Category**:\n${this.categories.map(cat => {
           const catProducts = this.products.filter(p => p.category_id === cat.id);
+          if (catProducts.length === 0) return `• **${cat.name}**: No products available`;
           const minPrice = Math.min(...catProducts.map(p => p.price));
           const maxPrice = Math.max(...catProducts.map(p => p.price));
           return `• **${cat.name}**: ₹${minPrice.toLocaleString('en-IN')} - ₹${maxPrice.toLocaleString('en-IN')}`;
@@ -260,11 +259,11 @@ Respond in JSON format:
         totalCost: totalInventory,
         budget: {
           total: totalInventory,
-                   breakdown: this.categories.reduce((acc, cat) => {
-           const catProducts = this.products.filter((p: Product) => p.category_id === cat.id);
-           acc[cat.name] = catProducts.reduce((sum, p: Product) => sum + p.price, 0);
-           return acc;
-         }, {} as { [key: string]: number }),
+          breakdown: this.categories.reduce((acc, cat) => {
+            const catProducts = this.products.filter((p: Product) => p.category_id === cat.id);
+            acc[cat.name] = catProducts.reduce((sum, p: Product) => sum + p.price, 0);
+            return acc;
+          }, {} as { [key: string]: number }),
           recommendations: [
             'Prioritize safety-critical equipment',
             'Consider energy-efficient options for long-term savings',
@@ -274,9 +273,26 @@ Respond in JSON format:
       };
     }
 
-    // General help
+    // Search for specific products
+    const searchResults = this.intelligentSearch(query);
+    if (searchResults.length > 0) {
+      return {
+        message: `🔍 **Search Results for "${query}"**\n\nI found ${searchResults.length} matching products:\n\n${searchResults.slice(0, 5).map(p => 
+          `• **${p.name}** (${p.manufacturer})\n  - Part Number: ${p.part_number}\n  - Price: ₹${p.price.toLocaleString('en-IN')}\n  - Stock: ${p.stock} units\n  - ${p.voltage ? `${p.voltage}V` : ''} ${p.current ? `${p.current}A` : ''}\n`
+        ).join('\n')}\n\nNeed more specific information about any of these products?`,
+        suggestedProducts: searchResults.slice(0, 5),
+        totalCost: searchResults.reduce((sum, p) => sum + p.price, 0),
+      };
+    }
+
+    // General help - NO budget analysis
+    const inStockCount = this.products.filter(p => p.stock > 0).length;
     return {
-      message: `🔧 **ElectroQuick Equipment Assistant**\n\nI have access to **${this.products.length} electrical products** across **${this.categories.length} categories**!\n\n**What can I help you with?**\n\n🏭 **Equipment Categories**:\n${this.categories.map(cat => `• ${cat.name}`).join('\n')}\n\n💡 **I can help with**:\n• Equipment recommendations based on your needs\n• Cost calculations and budget planning\n• Technical specifications and compatibility\n• Project quotations and bulk pricing\n• Installation guidance and safety tips\n\n**Just tell me**:\n• What equipment you need\n• Your project requirements\n• Budget constraints\n• Technical specifications\n\nI'll provide specific product recommendations from our catalog! 🎯`,
+      message: `🔧 **ElectroQuick Equipment Assistant**\n\nI have access to **${this.products.length} electrical products** across **${this.categories.length} categories**!\n\n**Current Inventory Status**:\n• Total Products: ${this.products.length}\n• In Stock: ${inStockCount}\n• Out of Stock: ${this.products.length - inStockCount}\n\n**Equipment Categories**:\n${this.categories.map(cat => {
+        const catProducts = this.products.filter(p => p.category_id === cat.id);
+        const inStock = catProducts.filter(p => p.stock > 0).length;
+        return `• ${cat.name} (${inStock}/${catProducts.length} in stock)`;
+      }).join('\n')}\n\n💡 **I can help with**:\n• Equipment recommendations based on your needs\n• Product search and specifications\n• Technical compatibility advice\n• Project quotations and bulk pricing\n• Installation guidance and safety tips\n\n**Just tell me**:\n• What equipment you need\n• Your project requirements\n• Technical specifications\n• Or ask about costs/budget if needed\n\nI'll provide specific product recommendations from our actual catalog! 🎯`,
       categories: this.categories
     };
   }
