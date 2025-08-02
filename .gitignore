@@ -8,7 +8,7 @@ yarn-error.log*
 .expo/
 dist/
 web-build/
-
+*.env
 # Native
 *.orig.*
 *.jks

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { PaperProvider, MD3LightTheme } from 'react-native-paper';
 import AppNavigator from './src/navigation/AppNavigator';
+import { config, validateConfig, logConfig } from './src/config/env';
 
 const theme = {
   ...MD3LightTheme,
@@ -30,6 +31,16 @@ const theme = {
 };
 
 export default function App() {
+  useEffect(() => {
+    // Log configuration and validate on app start
+    logConfig();
+    
+    const { isValid, errors } = validateConfig();
+    if (!isValid) {
+      console.warn('⚠️ Configuration Issues:', errors);
+    }
+  }, []);
+
   return (
     <PaperProvider theme={theme}>
       <StatusBar style="auto" />

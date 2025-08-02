@@ -5,6 +5,7 @@ import {
   ScrollView,
   FlatList,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import {
   Text,
@@ -12,6 +13,7 @@ import {
   ActivityIndicator,
   useTheme,
 } from 'react-native-paper';
+import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -123,7 +125,7 @@ export default function HomeScreen() {
         <GradientBanner
           title="ElectroQuick ⚡"
           subtitle="Your Premium Electrical Equipment Store"
-          icon="flash-on"
+          icon="bolt"
           colors={['#667eea', '#764ba2', '#f093fb']}
         />
 
@@ -184,6 +186,22 @@ export default function HomeScreen() {
         {/* Spacer for better scrolling */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Floating AI Assistant Button */}
+      <View style={styles.floatingButtonContainer}>
+        <TouchableOpacity
+          style={styles.aiButton}
+          onPress={() => navigation.navigate('AIAssistant')}
+        >
+          <LinearGradient
+            colors={['#667eea', '#764ba2']}
+            style={styles.aiButtonGradient}
+          >
+            <MaterialIcons name="psychology" size={28} color="white" />
+            <Text style={styles.aiButtonText}>AI Help</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -255,6 +273,32 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   bottomSpacer: {
-    height: 20,
+    height: 80, // Extra space for floating button
+  },
+  floatingButtonContainer: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    elevation: 10,
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  aiButton: {
+    borderRadius: 25,
+    overflow: 'hidden',
+  },
+  aiButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  aiButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

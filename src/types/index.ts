@@ -39,12 +39,14 @@ export type RootStackParamList = {
   ProductDetail: { productId: string };
   Checkout: undefined;
   Search: { query?: string };
+  AIAssistant: undefined;
 };
 
 export type MainTabsParamList = {
   Home: undefined;
   Categories: { categoryId?: string };
   Cart: undefined;
+  AIAssistant: undefined;
 };
 
 // Search filters

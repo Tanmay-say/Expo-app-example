@@ -13,6 +13,7 @@ import CartScreen from '../screens/CartScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 import CheckoutScreen from '../screens/CheckoutScreen';
 import SearchScreen from '../screens/SearchScreen';
+import AIAssistantScreen from '../screens/AIAssistantScreen';
 import { cartService } from '../services/cartService';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -103,6 +104,16 @@ function MainTabs() {
         options={{
           tabBarLabel: 'Cart',
           tabBarIcon: CartTabIcon,
+        }}
+      />
+      <Tab.Screen
+        name="AIAssistant"
+        component={AIAssistantScreen}
+        options={{
+          tabBarLabel: 'AI Help',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="psychology" color={color} size={size} />
+          ),
         }}
       />
     </Tab.Navigator>

@@ -14,7 +14,7 @@ interface GradientBannerProps {
 export default function GradientBanner({ 
   title, 
   subtitle, 
-  icon = 'flash-on',
+  icon = 'bolt',
   colors = ['#667eea', '#764ba2', '#f093fb']
 }: GradientBannerProps) {
   return (
