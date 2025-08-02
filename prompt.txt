@@ -1,0 +1,215 @@
+Below is a **production‑grade “expert” prompt** for Cursor (or any AI code assistant) to **scaffold a Blinkit‑style Expo mobile app ("ElectroQuick") for electrical-equipment**, integrating multiple open datasets for categories, products, images, and specs.
+
+At the end you'll also find **a simplified sample of the merged JSON dataset** to seed your catalog. Feel free to expand and refine the prompt further before executing.
+
+---
+
+## 📌 Full Cursor Prompt
+
+```
+# Project title
+ElectroQuick
+
+# Goal
+Generate a full Expo React Native project (managed workflow) named **ElectroQuick**. The app mimics Blinkit/Instacart UX for electrical equipment. It should load its catalog from a local JSON file `catalog.json` and provide:
+
+─ Category browsing  
+─ Search (by text, brand, specs)  
+─ Product detail page with large image and spec table  
+─ Cart & checkout screens  
+
+Use:
+• React Navigation: bottom tabs (Home, Categories, Cart), plus stack navigation  
+• FlatList for lists  
+• AsyncStorage for cart persistence  
+
+Include comments where backend APIs can be swapped in place of local JSON.
+
+Include sample code stubs (or TypeScript types) for category list, product list, product detail, search filter, and cart logic.
+
+---
+
+## 📦 Data-Ingestion & Catalog Integration Section
+
+Locate the following datasets:
+
+1. **Harvard Dataverse – Electrical & Electronic Components Dataset (DOI: 10.7910/DVN/D3ODGT)**  
+   ~4,700 labeled CAD meshes grouped by high-level categories like “Switch + Protection”, “Contactor, Relays”, “Cables and Conductors”, etc. Rich in specs (voltage/current/power/dimensions). Excellent for taxonomy and metadata. :contentReference[oaicite:2]{index=2}
+
+2. **Kaggle – Electronic Products & Pricing Data** (Datafiniti, ~15K products with title, price, image_url, brand, SKU). Great for integrating customer-facing product images and realistic pricing. :contentReference[oaicite:3]{index=3}
+
+3. **Kaggle – Electronic Components & Devices** (AryaMinus, ~1,500 systems and components, CSV with category label, voltage, current, manufacturer, part number). :contentReference[oaicite:4]{index=4}
+
+4. **Roboflow Universe – Electrical Component Image Dataset** (38+ image classes like relays, connectors, cables, breaker modules—open-license). Useful to add visual variation for categories missing product photos. :contentReference[oaicite:5]{index=5}
+
+5. **TraceParts CAD/Part Library – Electrical Components & Power Modules** (connectors, transformers, motors, relays, circuit breakers, cables). Download manufacturer-sponsored thumbnails and specs in STEP/PNG format. :contentReference[oaicite:6]{index=6}
+
+---
+
+## ⚙️ Preprocessing Instructions (for your build pipeline)
+
+Use a Python or Node script to:
+
+- Download and parse Kaggle CSVs and extract rows where category includes one of your app categories (e.g. “Lighting”, “Cables”)
+- Download metadata JSON from Harvard dataset; extract “Category” + “Subcategory” to build mapping `category_id → name`
+- For each product row:
+  - Assign `category_id` based on either the Harvard dataset category or Kaggle part type
+  - Extract `name`, `manufacturer`, `voltage`, `current`, `description`, `part_number`
+- For price and `image_url`, prioritize Datafiniti fields; if missing, fallback to thumbnails from TraceParts or Roboflow
+- For products without standard pricing (e.g. from Harvard CAD), retain `price: null` and flag `stock: 0` or “engineering sample”
+- Collect categories as an array:
+```
+
+{ id: "<slug>", name: "<Category Name>" }
+
+```
+- Use unique slug-style IDs (e.g. `relays_contactor`, `cables_wires`, `lighting`, etc.)
+
+At the end, produce a single `catalog.json`:
+
+```
+
+{
+"categories": \[ { "id":"...", "name":"..." }, … ],
+"products": \[
+{
+"id": "...",
+"category\_id": "...",
+"name": "...",
+"manufacturer": "...",
+"part\_number": "...",
+"voltage": 24,
+"current": 6,
+"description": "...",
+"price": 123.45,
+"image\_url": "...",
+"stock": 50,
+"dimensions\_mm": \[45,20,60]  // if available
+},
+… more entries …
+]
+}
+
+````
+
+Add support in app code for optional fields (`voltage`, `current`, `dimensions_mm`).
+
+---
+
+## 🌿 UI & Navigation Requirements
+
+- **Home screen**: Top search bar (filters across `name`, `manufacturer`, `part_number`); “Top Categories” grid (icons + label)
+- **Category screen**: Infinite scroll of products in that category
+- **Product detail**: Show image, title, price, manufacturer, specs table (part_number, voltage/current/dimensions), stock status, “Add to Cart” button
+- **Cart screen**: Review items with quantity, computed subtotal, dummy “Proceed to Checkout”
+- **Checkout**: Confirmation page showing total and “Thank you” message
+- Use Material Design UI library (e.g. React Native Paper), or styled-components
+- Implement caching for images and product data (e.g. via FastImage or Expo Asset cache)
+- Localization-ready: currency in rupees (₹) and decimal formatting for IN locale
+
+---
+
+## 🧠 Sample `catalog.json` snippet
+
+```jsonc
+{
+  "categories": [
+    { "id": "cables_wires", "name": "Cables & Wires" },
+    { "id": "switch_protection", "name": "Switches & Protection" },
+    { "id": "circuit_breakers", "name": "Circuit Breakers" },
+    { "id": "lighting", "name": "Lighting" },
+    { "id": "transformers_motors", "name": "Transformers & Motors" }
+  ],
+  "products": [
+    {
+      "id": "Arya_Comp_001",
+      "category_id": "switch_protection",
+      "name": "Siemens 3‑Pole Safety Relay 24 V DC",
+      "manufacturer": "Siemens",
+      "part_number": "3RS11‑00‑1F",
+      "voltage": 24,
+      "current": 8,
+      "description": "Safety relay for control applications",
+      "price": 340.00,
+      "image_url": "https://static.datafiniti.co/siemens_3pole_relay.png",
+      "stock": 120,
+      "dimensions_mm": [45, 20, 60]
+    },
+    {
+      "id": "Arya_Cable_027",
+      "category_id": "cables_wires",
+      "name": "3‑Core PVC Electrical Cable 2.5 mm²",
+      "manufacturer": "Generic",
+      "part_number": "PVC25_3C",
+      "voltage": 450,
+      "current": null,
+      "description": "Standard PVC insulated 2.5 mm² 3‑core cable",
+      "price": 150.00,
+      "image_url": "https://roboflow-proxy/electric_cable_sample.jpg",
+      "stock": 240,
+      "dimensions_mm": null
+    }
+  ]
+}
+````
+
+---
+
+## 🔁 Code structure & comments to include in project
+
+* Add comments in data-access layer (`data.ts` or `api.ts`) like:
+
+  ```ts
+  // TODO: Replace this local JSON import with GraphQL GET /products?categoryId=...
+  // Future: Add quantity-based pricing, stock sync via REST endpoint
+  ```
+* Abstract product listing logic so later integration with live REST or GraphQL API is seamless
+* Write unit tests (Jest) for `cartReducer` and search/filter logic
+* Include README 🚀 with instructions:
+
+  ```
+  yarn install
+  yarn start   # to launch Expo
+  Catalog building script: `npm run build-catalog` to merge datasets
+  ```
+
+---
+
+## ✅ Prompt summary:
+
+In short, your Cursor prompt should instruct:
+
+1. Pull metadata from Harvard dataset (to build taxonomy)
+2. Combine product rows from Datafiniti, AryaMinus, plus thumbnails from TraceParts/Roboflow
+3. Generate `catalog.json`
+4. Scaffold screens (Home, Categories, Products, Cart, Checkout) using React Native / Expo and basic UI
+5. Write search, add-to-cart, and offline persistence
+6. Provide code‑comments where live backend can be slotted in
+
+---
+
+## ⚠️ Licensing & Credits
+
+Include the following notice in your app README (or LICENSE file):
+
+```
+Data sources:
+– “Electrical & Electronic Components Dataset” (Harvard Dataverse, CC‑BY 4.0, DOI 10.7910/DVN/D3ODGT) :contentReference[oaicite:19]{index=19}
+– “Electronic Products and Pricing Data” (Kaggle / Datafiniti, ~15K products) :contentReference[oaicite:20]{index=20}
+– “Electronic Components & Devices” (Kaggle / AryaMinus) :contentReference[oaicite:21]{index=21}
+– “Electrical component images” (Roboflow Universe, CC‑BY) :contentReference[oaicite:22]{index=22}
+– Manufacturer CAD thumbnails (TraceParts) public catalog exports :contentReference[oaicite:23]{index=23}
+```
+
+---
+
+### 🧩 What to do next
+
+* Copy & paste this entire prompt into Cursor or your AI-coder of choice
+* Ask it to output the full Expo project directory and/or catalog pipeline
+* Run the generated `catalog_build` script to produce JSON, then `yarn start` to launch the app
+* Review screens, tweak legibility around specs, currency formatting, and add brand filters
+
+---
+
+That full prompt should give Cursor everything it needs to generate a Blinkit-style mobile app powered by real-world electrical equipment data and images. Let me know if you’d like sample code files (e.g. `CategoryList.tsx`) or a full catalog slice ready to inject!
